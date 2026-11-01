@@ -137,6 +137,25 @@
   installation on paired physical devices. The unsigned artifact alone cannot satisfy device
   installation requirements.
 
+## Companion identifier installation fix
+
+- Scope: support a final bundle identifier in manual unsigned IPA builds without changing
+  app sources or committing signing credentials.
+- [x] Review `project.yml`, signing configuration, and the successful unsigned IPA run:
+  archive packaging already validates matching iOS/watch companion identifiers.
+- [x] Add a validated manual bundle ID input, pass it to both archive targets, and verify the
+  archived iOS ID against the requested value.
+- [x] Document identifier changes during external re-signing, signature invalidation, and
+  the requirement to provision both apps.
+- [x] Ruby YAML parsing, `bash -n` for every workflow shell step, and eight bundle ID cases
+  passed (default/custom IDs accepted; malformed IDs and shell payloads rejected).
+  `git diff --check` passed. Input is passed via environment and quoted build arguments.
+- [x] Secret scanning found no secrets; post-commit CodeQL Actions analysis found zero alerts.
+- Remaining acceptance: build on the macOS runner and install a correctly re-signed artifact
+  on paired devices; an external signer must preserve or consistently update both identities.
+- Local limitation: Xcode is unavailable on this Linux runner; app sources and Python CLI
+  behavior are unchanged.
+
 ## Lessons Learned
 
 - The capture layer (watch/iOS) uses `HKWorkoutSession` only for background runtime and
