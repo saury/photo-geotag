@@ -1,0 +1,104 @@
+name: Build unsigned iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, main]
+    paths:
+      - "apps/**"
+      - "project.yml"
+      - ".github/workflows/ios-unsigned.yml"
+  pull_request:
+    branches: [master, main]
+    paths:
+      - "apps/**"
+      - "project.yml"
+      - ".github/workflows/ios-unsigned.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unsigned-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Install XcodeGen and inspect Xcode
+        run: |
+          brew install xcodegen
+          xcodebuild -version
+          xcodebuild -showsdks
+          xcodegen --version
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Archive iPhone app with embedded watch app (unsigned)
+        run: |
+          xcodebuild archive \
+            -project PhotoGeotag.xcodeproj \
+            -scheme PhotoGeotag \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/PhotoGeotag.xcarchive" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM=""
+
+      - name: Validate companion bundle and package IPA
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/PhotoGeotag.xcarchive/Products/Applications/PhotoGeotag.app"
+          watch="$app/Watch/PhotoGeotagWatch.app"
+          test -d "$app"
+          test -d "$watch"
+          ios_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")
+          watch_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$watch/Info.plist")
+          companion_id=$(/usr/libexec/PlistBuddy -c 'Print :WKCompanionAppBundleIdentifier' "$watch/Info.plist")
+          test "$companion_id" = "$ios_id"
+          test "$watch_id" = "$ios_id.watchkitapp"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :WKApplication' "$watch/Info.plist")" = "true"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms:0' "$app/Info.plist")" = "iPhoneOS"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms:0' "$watch/Info.plist")" = "WatchOS"
+          ios_executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Info.plist")
+          watch_executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$watch/Info.plist")
+          test -x "$app/$ios_executable"
+          test -x "$watch/$watch_executable"
+          for bundle in "$app" "$watch"; do
+            if codesign -d "$bundle" 2>/dev/null; then
+              echo "::error::Expected an unsigned app: $bundle"
+              exit 1
+            fi
+          done
+          mkdir -p "$RUNNER_TEMP/ipa/Payload" "$GITHUB_WORKSPACE/dist"
+          ditto "$app" "$RUNNER_TEMP/ipa/Payload/PhotoGeotag.app"
+          cd "$RUNNER_TEMP/ipa"
+          /usr/bin/zip -qry "$GITHUB_WORKSPACE/dist/PhotoGeotag-unsigned.ipa" Payload
+          /usr/bin/unzip -t "$GITHUB_WORKSPACE/dist/PhotoGeotag-unsigned.ipa"
+          {
+            echo "### Unsigned iOS IPA"
+            echo "- Artifact: \`PhotoGeotag-unsigned.ipa\`"
+            echo "- Embedded watch app: \`Payload/PhotoGeotag.app/Watch/PhotoGeotagWatch.app\`"
+            echo "- Companion bundle identifiers and device platforms verified."
+            echo "- Not directly installable: both apps require valid signing and provisioning."
+            echo "- See apps/README.md for paired Apple Watch installation requirements."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: PhotoGeotag-unsigned-ipa
+          path: dist/PhotoGeotag-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
