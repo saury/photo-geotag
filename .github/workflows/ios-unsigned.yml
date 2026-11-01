@@ -2,6 +2,12 @@ name: Build unsigned iOS IPA
 
 on:
   workflow_dispatch:
+    inputs:
+      app_bundle_id:
+        description: "Final iOS bundle identifier (must be preserved when re-signing)"
+        required: false
+        default: "com.example.photogeotag"
+        type: string
   push:
     branches: [master, main]
     paths:
@@ -26,11 +32,21 @@ jobs:
   build:
     runs-on: macos-15
     timeout-minutes: 30
+    env:
+      PHOTOGEOTAG_APP_ID: ${{ inputs.app_bundle_id || 'com.example.photogeotag' }}
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Validate app bundle identifier
+        run: |
+          set -euo pipefail
+          if [[ ! "$PHOTOGEOTAG_APP_ID" =~ ^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$ ]]; then
+            echo "::error::App bundle identifier must contain dot-separated letters, digits, or hyphens."
+            exit 1
+          fi
 
       - name: Install XcodeGen and inspect Xcode
         run: |
@@ -51,6 +67,7 @@ jobs:
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/PhotoGeotag.xcarchive" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            PHOTOGEOTAG_APP_ID="$PHOTOGEOTAG_APP_ID" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
@@ -66,6 +83,7 @@ jobs:
           ios_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")
           watch_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$watch/Info.plist")
           companion_id=$(/usr/libexec/PlistBuddy -c 'Print :WKCompanionAppBundleIdentifier' "$watch/Info.plist")
+          test "$ios_id" = "$PHOTOGEOTAG_APP_ID"
           test "$companion_id" = "$ios_id"
           test "$watch_id" = "$ios_id.watchkitapp"
           test "$(/usr/libexec/PlistBuddy -c 'Print :WKApplication' "$watch/Info.plist")" = "true"
@@ -89,9 +107,12 @@ jobs:
           {
             echo "### Unsigned iOS IPA"
             echo "- Artifact: \`PhotoGeotag-unsigned.ipa\`"
+            echo "- iOS bundle identifier: \`$ios_id\`"
+            echo "- Watch bundle identifier: \`$watch_id\`"
             echo "- Embedded watch app: \`Payload/PhotoGeotag.app/Watch/PhotoGeotagWatch.app\`"
             echo "- Companion bundle identifiers and device platforms verified."
             echo "- Not directly installable: both apps require valid signing and provisioning."
+            echo "- Re-signing must preserve these identifiers or update the Watch companion identifier before signing both apps."
             echo "- See apps/README.md for paired Apple Watch installation requirements."
           } >> "$GITHUB_STEP_SUMMARY"
 

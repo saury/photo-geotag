@@ -48,6 +48,10 @@ The **Build unsigned iOS IPA** workflow (`../.github/workflows/ios-unsigned.yml`
 Apple app changes in pull requests and pushes to `master`/`main`. It can also be started
 manually from **Actions → Build unsigned iOS IPA → Run workflow** on a branch containing
 the workflow (manual dispatch must first be available on the default branch).
+For a manual build, set **app_bundle_id** to the final iOS bundle identifier used by your
+signing/provisioning tool. The default remains `com.example.photogeotag` for automatic builds.
+The workflow passes this value as `PHOTOGEOTAG_APP_ID` to both targets, so the embedded watch
+identifier and companion reference match it, and verifies the result before packaging.
 
 The macOS runner installs XcodeGen, uses its selected Xcode, and archives the `PhotoGeotag`
 Release scheme for a generic physical iPhone with signing disabled for both targets.
@@ -92,6 +96,27 @@ physical devices. See Apple's [companion identifier documentation][companion-id]
 
 [companion-id]: https://developer.apple.com/documentation/bundleresources/information-property-list/wkcompanionappbundleidentifier
 [app-signing]: https://support.apple.com/guide/security/app-code-signing-process-sec7c917bf14/web
+
+### Installation error: InvalidCompanionAppBundleIdentifier
+
+This error means the embedded watch app's `WKCompanionAppBundleIdentifier` does not match
+the installed iOS app's `CFBundleIdentifier`. If the installer reports an iOS identifier with
+an added suffix while the watch still references `com.example.photogeotag`, the re-signing
+step changed only the iOS identity; this is not a failure of the unsigned archive build.
+
+- Re-run the workflow with **app_bundle_id** set to the final iOS identifier and configure the
+  signer to preserve it (do not append another suffix).
+- If the signer must change identifiers, it must also update the embedded watch app before
+  signing: for an example final iOS ID `com.example.photogeotag.SAMPLE1234`, the watch ID must
+  be `com.example.photogeotag.SAMPLE1234.watchkitapp` and its companion reference must be
+  `com.example.photogeotag.SAMPLE1234`.
+- Provision and sign both apps for their final identifiers. Editing a plist after signing
+  invalidates its signature; changing the companion key alone does not fix watch provisioning.
+- If your sideloading tool cannot handle companion watch apps, deploy from Xcode with signing
+  configured below instead.
+
+The workflow checks the unsigned artifact only; it cannot validate changes made by an external
+signer or guarantee installation on paired devices.
 
 ## Signing and bundle identity
 
