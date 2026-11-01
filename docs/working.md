@@ -120,6 +120,23 @@
   the generated project dropping a manually-set team in Xcode. Verified: device builds and installs
   on a physical iPhone + Apple Watch with a real bundle id.
 
+## Unsigned IPA workflow
+
+- Scope: add an unsigned device IPA build without changing app sources or signing configuration.
+- [x] Review XcodeGen targets, watch embedding, signing configuration, and existing CI.
+- [x] Add a macOS workflow to archive both apps with signing disabled, validate companion
+  packaging, and upload the IPA.
+- [x] Document artifact download and paired-watch signing/provisioning requirements.
+- [x] Validate workflow YAML and every shell step with Ruby YAML and `bash -n`;
+  `git diff --check` passed. Read-only review found no significant issues.
+- [x] Complete secret scanning (no secrets) and post-commit CodeQL review
+  (Actions analysis: zero alerts).
+- Local limitation: this Linux environment has no Xcode, so an actual Apple archive cannot
+  be built here. Existing Python-only CI is unchanged.
+- Remaining acceptance: run the workflow on GitHub's macOS runner and test a correctly signed
+  installation on paired physical devices. The unsigned artifact alone cannot satisfy device
+  installation requirements.
+
 ## Lessons Learned
 
 - The capture layer (watch/iOS) uses `HKWorkoutSession` only for background runtime and

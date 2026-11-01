@@ -42,6 +42,57 @@ latest OS, which may not have the named device.
 Bundle identifiers are placeholders (`com.example.photogeotag[.watchkitapp]`); set your own
 before signing.
 
+## Unsigned IPA from GitHub Actions
+
+The **Build unsigned iOS IPA** workflow (`../.github/workflows/ios-unsigned.yml`) runs for
+Apple app changes in pull requests and pushes to `master`/`main`. It can also be started
+manually from **Actions → Build unsigned iOS IPA → Run workflow** on a branch containing
+the workflow (manual dispatch must first be available on the default branch).
+
+The macOS runner installs XcodeGen, uses its selected Xcode, and archives the `PhotoGeotag`
+Release scheme for a generic physical iPhone with signing disabled for both targets.
+It validates the embedded watch app, companion identifiers, device platforms, executables,
+and absence of signatures, then packages the app directly rather than using
+`xcodebuild -exportArchive`, which requires distribution signing/provisioning.
+
+Download the **PhotoGeotag-unsigned-ipa** artifact from the completed run and extract its
+ZIP to obtain `PhotoGeotag-unsigned.ipa`. Artifacts are retained for 14 days. The IPA contains:
+
+```text
+Payload/PhotoGeotag.app/
+└── Watch/PhotoGeotagWatch.app/
+```
+
+No signing certificates, provisioning profiles, or repository secrets are needed to build
+this artifact. It is **not directly installable** on a normal iPhone or Apple Watch.
+
+### Can the embedded watch app be installed?
+
+The project is configured as an iPhone app with a bundled companion watch app, so a properly
+signed installation can make the watch app available on the paired Apple Watch. This requires:
+
+- Valid signing and provisioning for **both** the iOS and watchOS apps, including each target's
+  HealthKit entitlement; signing only the outer iOS bundle is insufficient.
+- Consistent identifiers: the watch bundle identifier is the iOS identifier plus `.watchkitapp`,
+  and `WKCompanionAppBundleIdentifier` matches the iOS identifier. A re-signing tool that changes
+  identifiers must update the embedded app and provisioning accordingly.
+- A compatible paired iPhone (iOS 17+) and Apple Watch (watchOS 10+), with provisioning covering
+  the devices when using development or ad hoc distribution.
+- An installation method that preserves and supports the embedded watch app. Generic iPhone
+  sideloading tools may not support watchOS provisioning or the required entitlements.
+
+After a properly signed iPhone installation, use the iPhone's **Watch → My Watch → Available
+Apps → Photo Track → Install**, or enable **Automatic App Install**. Installing the iPhone app
+alone does not guarantee automatic watch installation. For development, the reliable path is
+to configure signing as below and deploy the targets from Xcode to the paired devices.
+
+CI checks packaging only; actual watch installation and operation must be verified on paired
+physical devices. See Apple's [companion identifier documentation][companion-id] and
+[app code-signing requirements][app-signing].
+
+[companion-id]: https://developer.apple.com/documentation/bundleresources/information-property-list/wkcompanionappbundleidentifier
+[app-signing]: https://support.apple.com/guide/security/app-code-signing-process-sec7c917bf14/web
+
 ## Signing and bundle identity
 
 App identity and signing come from `Signing.xcconfig`. The committed file holds only placeholders
