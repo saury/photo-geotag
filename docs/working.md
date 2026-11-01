@@ -129,7 +129,8 @@
 - [x] Document artifact download and paired-watch signing/provisioning requirements.
 - [x] Validate workflow YAML and every shell step with Ruby YAML and `bash -n`;
   `git diff --check` passed. Read-only review found no significant issues.
-- [ ] Complete secret scanning and post-commit security review.
+- [x] Complete secret scanning (no secrets) and post-commit CodeQL review
+  (Actions analysis: zero alerts).
 - Local limitation: this Linux environment has no Xcode, so an actual Apple archive cannot
   be built here. Existing Python-only CI is unchanged.
 - Remaining acceptance: run the workflow on GitHub's macOS runner and test a correctly signed
