@@ -150,7 +150,7 @@
 - [x] Ruby YAML parsing, `bash -n` for every workflow shell step, and eight bundle ID cases
   passed (default/custom IDs accepted; malformed IDs and shell payloads rejected).
   `git diff --check` passed. Input is passed via environment and quoted build arguments.
-- [ ] Complete secret scanning and post-commit CodeQL review.
+- [x] Secret scanning found no secrets; post-commit CodeQL Actions analysis found zero alerts.
 - Remaining acceptance: build on the macOS runner and install a correctly re-signed artifact
   on paired devices; an external signer must preserve or consistently update both identities.
 - Local limitation: Xcode is unavailable on this Linux runner; app sources and Python CLI
