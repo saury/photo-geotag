@@ -156,6 +156,15 @@
 - Local limitation: Xcode is unavailable on this Linux runner; app sources and Python CLI
   behavior are unchanged.
 
+## Unsigned IPA default bundle identifier
+
+- Scope: use `com.example.photogeotag.S65WSKS7F3` as the workflow's convenience default and
+  clarify that users should replace it with their own final bundle identifier.
+- [x] Update the workflow input and environment fallback.
+- [x] Document that the default is user-specific and may need to be changed.
+- [x] Parse the workflow YAML and check the diff; secret scanning found no secrets.
+- [ ] Run CodeQL review.
+
 ## Lessons Learned
 
 - The capture layer (watch/iOS) uses `HKWorkoutSession` only for background runtime and
