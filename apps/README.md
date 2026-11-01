@@ -48,8 +48,10 @@ The **Build unsigned iOS IPA** workflow (`../.github/workflows/ios-unsigned.yml`
 Apple app changes in pull requests and pushes to `master`/`main`. It can also be started
 manually from **Actions → Build unsigned iOS IPA → Run workflow** on a branch containing
 the workflow (manual dispatch must first be available on the default branch).
-For a manual build, set **app_bundle_id** to the final iOS bundle identifier used by your
-signing/provisioning tool. The default remains `com.example.photogeotag` for automatic builds.
+For a manual build, **app_bundle_id** defaults to `com.example.photogeotag.S65WSKS7F3`.
+This is a convenience default only: replace it with your own final iOS bundle identifier before
+signing/provisioning if this value is not registered to you. The workflow uses this default for
+automatic builds too.
 The workflow passes this value as `PHOTOGEOTAG_APP_ID` to both targets, so the embedded watch
 identifier and companion reference match it, and verifies the result before packaging.
 

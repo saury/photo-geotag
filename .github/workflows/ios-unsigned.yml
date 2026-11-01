@@ -6,7 +6,7 @@ on:
       app_bundle_id:
         description: "Final iOS bundle identifier (must be preserved when re-signing)"
         required: false
-        default: "com.example.photogeotag"
+        default: "com.example.photogeotag.S65WSKS7F3"
         type: string
   push:
     branches: [master, main]
@@ -33,7 +33,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 30
     env:
-      PHOTOGEOTAG_APP_ID: ${{ inputs.app_bundle_id || 'com.example.photogeotag' }}
+      PHOTOGEOTAG_APP_ID: ${{ inputs.app_bundle_id || 'com.example.photogeotag.S65WSKS7F3' }}
     defaults:
       run:
         shell: bash
