@@ -163,7 +163,7 @@
 - [x] Update the workflow input and environment fallback.
 - [x] Document that the default is user-specific and may need to be changed.
 - [x] Parse the workflow YAML and check the diff; secret scanning found no secrets.
-- [ ] Run CodeQL review.
+- [x] CodeQL Actions review found zero alerts.
 
 ## Lessons Learned
 
