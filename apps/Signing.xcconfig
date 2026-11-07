@@ -10,6 +10,8 @@
 //   PHOTOGEOTAG_APP_ID = io.github.example.photogeotag
 
 PHOTOGEOTAG_APP_ID = com.example.photogeotag
+PHOTOGEOTAG_WATCH_BUNDLE_ID = $(PHOTOGEOTAG_APP_ID).watchkitapp
+PHOTOGEOTAG_WATCH_COMPANION_ID = $(PHOTOGEOTAG_APP_ID)
 CODE_SIGN_STYLE = Automatic
 
 #include? "Signing.local.xcconfig"
