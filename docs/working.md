@@ -165,6 +165,20 @@
 - [x] Parse the workflow YAML and check the diff; secret scanning found no secrets.
 - [x] CodeQL Actions review found zero alerts.
 
+## LiveContainer companion identifier
+
+- Scope: prepare the embedded Watch app identifiers for LiveContainer's default iOS bundle ID
+  rewrite shown in the installation error, without changing ordinary local build identifiers.
+- [x] Add an optional expected installed iOS bundle ID input; blank defaults to
+  `app_bundle_id.S65WSKS7F3`, and validate the value and prefix relationship.
+- [x] Set the embedded Watch bundle ID and `WKCompanionAppBundleIdentifier` to correspond to the
+  expected installed iOS ID; validate both in the archive and document the setting.
+- [x] Parse both YAML files, run `bash -n` on all workflow shell steps, validate default IDs, and
+  run `git diff --check`.
+- Remaining acceptance: run the macOS archive workflow and attempt installation in LiveContainer;
+  this Linux environment cannot perform an Xcode archive or confirm LiveContainer's handling of
+  companion watch apps and provisioning.
+
 ## Lessons Learned
 
 - The capture layer (watch/iOS) uses `HKWorkoutSession` only for background runtime and

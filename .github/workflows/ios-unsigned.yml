@@ -8,6 +8,11 @@ on:
         required: false
         default: "com.example.photogeotag.S65WSKS7F3"
         type: string
+      livecontainer_app_bundle_id:
+        description: "iOS bundle identifier after LiveContainer adds its suffix (blank = app_bundle_id + .S65WSKS7F3)"
+        required: false
+        default: ""
+        type: string
   push:
     branches: [master, main]
     paths:
@@ -34,6 +39,7 @@ jobs:
     timeout-minutes: 30
     env:
       PHOTOGEOTAG_APP_ID: ${{ inputs.app_bundle_id || 'com.example.photogeotag.S65WSKS7F3' }}
+      LIVE_CONTAINER_APP_ID: ${{ inputs.livecontainer_app_bundle_id || format('{0}.S65WSKS7F3', inputs.app_bundle_id || 'com.example.photogeotag.S65WSKS7F3') }}
     defaults:
       run:
         shell: bash
@@ -45,6 +51,14 @@ jobs:
           set -euo pipefail
           if [[ ! "$PHOTOGEOTAG_APP_ID" =~ ^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$ ]]; then
             echo "::error::App bundle identifier must contain dot-separated letters, digits, or hyphens."
+            exit 1
+          fi
+          if [[ ! "$LIVE_CONTAINER_APP_ID" =~ ^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$ ]]; then
+            echo "::error::LiveContainer app bundle identifier must contain dot-separated letters, digits, or hyphens."
+            exit 1
+          fi
+          if [[ "$LIVE_CONTAINER_APP_ID" != "$PHOTOGEOTAG_APP_ID".* ]]; then
+            echo "::error::LiveContainer app bundle identifier must start with app_bundle_id followed by a dot."
             exit 1
           fi
 
@@ -68,6 +82,8 @@ jobs:
             -archivePath "$RUNNER_TEMP/PhotoGeotag.xcarchive" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             PHOTOGEOTAG_APP_ID="$PHOTOGEOTAG_APP_ID" \
+            PHOTOGEOTAG_WATCH_BUNDLE_ID="$LIVE_CONTAINER_APP_ID.watchkitapp" \
+            PHOTOGEOTAG_WATCH_COMPANION_ID="$LIVE_CONTAINER_APP_ID" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
@@ -84,8 +100,8 @@ jobs:
           watch_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$watch/Info.plist")
           companion_id=$(/usr/libexec/PlistBuddy -c 'Print :WKCompanionAppBundleIdentifier' "$watch/Info.plist")
           test "$ios_id" = "$PHOTOGEOTAG_APP_ID"
-          test "$companion_id" = "$ios_id"
-          test "$watch_id" = "$ios_id.watchkitapp"
+          test "$companion_id" = "$LIVE_CONTAINER_APP_ID"
+          test "$watch_id" = "$LIVE_CONTAINER_APP_ID.watchkitapp"
           test "$(/usr/libexec/PlistBuddy -c 'Print :WKApplication' "$watch/Info.plist")" = "true"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms:0' "$app/Info.plist")" = "iPhoneOS"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms:0' "$watch/Info.plist")" = "WatchOS"
@@ -107,12 +123,13 @@ jobs:
           {
             echo "### Unsigned iOS IPA"
             echo "- Artifact: \`PhotoGeotag-unsigned.ipa\`"
-            echo "- iOS bundle identifier: \`$ios_id\`"
+            echo "- iOS bundle identifier in IPA before LiveContainer: \`$ios_id\`"
+            echo "- Expected iOS bundle identifier after LiveContainer: \`$LIVE_CONTAINER_APP_ID\`"
             echo "- Watch bundle identifier: \`$watch_id\`"
             echo "- Embedded watch app: \`Payload/PhotoGeotag.app/Watch/PhotoGeotagWatch.app\`"
-            echo "- Companion bundle identifiers and device platforms verified."
+            echo "- Watch bundle identifier and companion reference match the expected LiveContainer iOS identifier."
             echo "- Not directly installable: both apps require valid signing and provisioning."
-            echo "- Re-signing must preserve these identifiers or update the Watch companion identifier before signing both apps."
+            echo "- Re-signing must use the expected installed iOS identifier; rebuild with livecontainer_app_bundle_id if it differs."
             echo "- See apps/README.md for paired Apple Watch installation requirements."
           } >> "$GITHUB_STEP_SUMMARY"
 

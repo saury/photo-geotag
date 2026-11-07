@@ -35,7 +35,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: PhotoGeotagWatch
-        PRODUCT_BUNDLE_IDENTIFIER: $(PHOTOGEOTAG_APP_ID).watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: $(PHOTOGEOTAG_WATCH_BUNDLE_ID)
         GENERATE_INFOPLIST_FILE: NO
     info:
       path: apps/WatchApp/Info.plist
@@ -47,7 +47,7 @@ targets:
           - en
           - zh-Hans
         WKApplication: true
-        WKCompanionAppBundleIdentifier: $(PHOTOGEOTAG_APP_ID)
+        WKCompanionAppBundleIdentifier: $(PHOTOGEOTAG_WATCH_COMPANION_ID)
         WKBackgroundModes:
           - workout-processing
         NSHealthShareUsageDescription: Photo Track requests workout authorization only to keep GPS recording alive in the background. It never reads or saves health data.
