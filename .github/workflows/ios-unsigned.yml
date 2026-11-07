@@ -129,7 +129,7 @@ jobs:
             echo "- Embedded watch app: \`Payload/PhotoGeotag.app/Watch/PhotoGeotagWatch.app\`"
             echo "- Watch bundle identifier and companion reference match the expected LiveContainer iOS identifier."
             echo "- Not directly installable: both apps require valid signing and provisioning."
-            echo "- Re-signing must preserve these identifiers or update the Watch companion identifier before signing both apps."
+            echo "- Re-signing must use the expected installed iOS identifier; rebuild with livecontainer_app_bundle_id if it differs."
             echo "- See apps/README.md for paired Apple Watch installation requirements."
           } >> "$GITHUB_STEP_SUMMARY"
 

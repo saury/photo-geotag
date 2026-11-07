@@ -52,8 +52,12 @@ For a manual build, **app_bundle_id** defaults to `com.example.photogeotag.S65WS
 This is a convenience default only: replace it with your own final iOS bundle identifier before
 signing/provisioning if this value is not registered to you. The workflow uses this default for
 automatic builds too.
-The workflow passes this value as `PHOTOGEOTAG_APP_ID` to both targets, so the embedded watch
-identifier and companion reference match it, and verifies the result before packaging.
+The workflow passes this value as `PHOTOGEOTAG_APP_ID` to the iOS target. The optional
+**livecontainer_app_bundle_id** input is the iOS bundle identifier after LiveContainer adds its
+suffix; when blank, it defaults to `app_bundle_id.S65WSKS7F3`. The workflow configures the embedded
+watch bundle identifier as that value plus `.watchkitapp` and its companion reference as that
+value, then verifies them before packaging. Set the input explicitly if LiveContainer uses a
+different suffix.
 
 The macOS runner installs XcodeGen, uses its selected Xcode, and archives the `PhotoGeotag`
 Release scheme for a generic physical iPhone with signing disabled for both targets.
@@ -79,9 +83,10 @@ signed installation can make the watch app available on the paired Apple Watch. 
 
 - Valid signing and provisioning for **both** the iOS and watchOS apps, including each target's
   HealthKit entitlement; signing only the outer iOS bundle is insufficient.
-- Consistent identifiers: the watch bundle identifier is the iOS identifier plus `.watchkitapp`,
-  and `WKCompanionAppBundleIdentifier` matches the iOS identifier. A re-signing tool that changes
-  identifiers must update the embedded app and provisioning accordingly.
+- Consistent identifiers: the watch bundle identifier is the installed iOS identifier plus
+  `.watchkitapp`, and `WKCompanionAppBundleIdentifier` matches the installed iOS identifier. A
+  re-signing tool that changes identifiers must update the embedded app and provisioning
+  accordingly. The LiveContainer workflow input prepares these values for its expected suffix.
 - A compatible paired iPhone (iOS 17+) and Apple Watch (watchOS 10+), with provisioning covering
   the devices when using development or ad hoc distribution.
 - An installation method that preserves and supports the embedded watch app. Generic iPhone
@@ -102,16 +107,16 @@ physical devices. See Apple's [companion identifier documentation][companion-id]
 ### Installation error: InvalidCompanionAppBundleIdentifier
 
 This error means the embedded watch app's `WKCompanionAppBundleIdentifier` does not match
-the installed iOS app's `CFBundleIdentifier`. If the installer reports an iOS identifier with
-an added suffix while the watch still references `com.example.photogeotag`, the re-signing
-step changed only the iOS identity; this is not a failure of the unsigned archive build.
+the installed iOS app's `CFBundleIdentifier`. In the reported case, LiveContainer changes
+`com.example.photogeotag.S65WSKS7F3` to
+`com.example.photogeotag.S65WSKS7F3.S65WSKS7F3`; an IPA built without preparing for that rewritten
+identifier still points the watch app at the shorter value.
 
-- Re-run the workflow with **app_bundle_id** set to the final iOS identifier and configure the
-  signer to preserve it (do not append another suffix).
-- If the signer must change identifiers, it must also update the embedded watch app before
-  signing: for an example final iOS ID `com.example.photogeotag.SAMPLE1234`, the watch ID must
-  be `com.example.photogeotag.SAMPLE1234.watchkitapp` and its companion reference must be
-  `com.example.photogeotag.SAMPLE1234`.
+- Re-run the workflow with **app_bundle_id** set to the identifier before LiveContainer adds its
+  suffix. Leave **livecontainer_app_bundle_id** blank for the default `.S65WSKS7F3` suffix, or set
+  it to the exact installed iOS identifier if the suffix differs.
+- The workflow uses that expected installed identifier for both the Watch app's bundle ID and
+  `WKCompanionAppBundleIdentifier`, then validates them in the archived IPA.
 - Provision and sign both apps for their final identifiers. Editing a plist after signing
   invalidates its signature; changing the companion key alone does not fix watch provisioning.
 - If your sideloading tool cannot handle companion watch apps, deploy from Xcode with signing
